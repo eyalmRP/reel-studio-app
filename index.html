@@ -152,12 +152,31 @@
     if (opacity !== undefined) f.property("ADBE Vector Fill Opacity").setValue(opacity);
     return f;
   }
+  // Sets a menu: to the item whose name matches re where After Effects 26
+  // lists a menu's items, else to item number fallback (its place in an
+  // English After Effects).
+  function menuPick(prop, re, fallback) {
+    var items = null, k, pick = fallback;
+    try { items = prop.propertyParameters; } catch (e0) {}
+    if (items && items.length) for (k = 0; k < items.length; k++) if (re.test(items[k])) { pick = k + 1; break; }
+    prop.setValue(pick);
+  }
+  // A soft glow round a layer, as the preview draws it: Composite Original
+  // On Top keeps the art itself clean (the default lays the glow over it
+  // and blows out bright art), at GLOW_K of the given strength, times
+  // SLOT CONTROL "Glow %" so every glow turns up or down at once.
+  var GLOW_K = 0.6;
   function glow(L, radius, intensity) {
     try {
       var g = fx(L, "ADBE Glo2");
       try { g.property("Glow Radius").setValue(radius); } catch (e1) {}
-      try { g.property("Glow Intensity").setValue(intensity); } catch (e2) {}
+      try {
+        var gi = g.property("Glow Intensity");
+        gi.setValue(r4(intensity * GLOW_K));
+        gi.expression = "value * " + ctrl("Glow %") + " / 100;";
+      } catch (e2) {}
       try { g.property("Glow Threshold").setValue(55); } catch (e3) {}
+      try { menuPick(g.property("Composite Original"), /^on top$|oben|dessus|encima|sopra|cima/i, 1); } catch (e4) {}
     } catch (e) {}
   }
   function text(comp, name, str, size, xy, rgbv, shadow) {
@@ -539,6 +558,8 @@
     var adj = rc.layers.addSolid([1, 1, 1], "Reel Motion Blur", rc.width, rc.height, 1, DUR);
     adj.adjustmentLayer = true;
     var db = fx(adj, "ADBE Motion Blur", "Spin Blur");
+    // Direction: 0 is up and down in After Effects (90 would blur sideways).
+    db.property(1).setValue(0);
     db.property(2).expression = "var v = Math.abs(thisComp.layer(\"CTRL\").effect(\"Spin\")(1).velocity);\n" +
       "var a = Math.max(0, Math.min(1, (v - 3) / 14)) * " + DATA.blur + " * " + ctrl("Spin Blur %") + " / 100;\na * " + DATA.cellH + " * 0.35;";
   }
@@ -1070,7 +1091,7 @@
   // ---------- main comp ----------
   // The main comp and SLOT CONTROL come first: expressions everywhere read
   // the After Effects side controls on it.
-  var AE_CONTROLS = ["Shake %", "Flash %", "Dim %", "Particles %", "Spin Blur %", "Win Pop %", "Zoom %"];
+  var AE_CONTROLS = ["Shake %", "Flash %", "Dim %", "Particles %", "Spin Blur %", "Win Pop %", "Zoom %", "Glow %"];
   function createMain() {
     main = proj.items.addComp(mainName, W, H, 1, DUR, FPS);
     main.parentFolder = top;
@@ -1632,10 +1653,7 @@
     if (tail >= 100) return;
     try {
       var tp = st.property("ADBE Vector Stroke Taper");
-      var lu = tp.property("ADBE Vector Taper Length Units"), items = null, pct = 2, k;
-      try { items = lu.propertyParameters; } catch (e0) {}
-      if (items && items.length) for (k = 0; k < items.length; k++) if (/percent|prozent|pourcent|porcentaje|percentuale|procent|%/i.test(items[k])) { pct = k + 1; break; }
-      lu.setValue(pct);
+      menuPick(tp.property("ADBE Vector Taper Length Units"), /percent|prozent|pourcent|porcentaje|percentuale|procent|%/i, 2);
       tp.property("ADBE Vector Taper Start Length").setValue(100);
       tp.property("ADBE Vector Taper Start Width").setValue(tail);
       tp.property("ADBE Vector Taper Start Ease").setValue(0);
@@ -2425,8 +2443,10 @@ Full-screen wins in HD
     win (when, and what it paid); edit them there, or replace the
     expression with your own keyframes and the value text follows.
   - "Shake %", "Flash %", "Dim %", "Particles %" (thins every explosion
-    out), "Spin Blur %", "Win Pop %" and "Zoom %" (the anticipation
-    zoom) scale those effects; 100 is what Reel Studio showed.
+    out), "Spin Blur %" (the reels' up-and-down blur), "Win Pop %", "Zoom %"
+    (the anticipation zoom) and "Glow %" (every glow at once; each glow
+    keeps its art on top) scale those effects; 100 is what Reel Studio
+    showed.
   - "FX Colour": tints the effect placeholders (see above).
 - The wheel game has no machine layers: just the background, the wheel and
   its prizes, one round comp per spin handing the wheel to the next.

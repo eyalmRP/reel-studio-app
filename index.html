@@ -1328,17 +1328,17 @@
   // Payline placeholders draw themselves on in 0.45 s from their start.
   function paylinePH(ln) {
     return ph("Payline " + pad2(ln.index + 1), "Paylines", W, H, DUR + 2, function (c) {
+      // Each Trim Paths is keyed before its stroke goes in: adding to a
+      // group invalidates the references already taken inside it.
       var S = shapeLayer(c, "Line");
       var g = group(S);
       path(g, ln.pts, false);
-      var tp = g.addProperty("ADBE Vector Filter - Trim");
+      ease1(g.addProperty("ADBE Vector Filter - Trim").property("ADBE Vector Trim End"), [[0, 0], [0.45, 100]]);
       stroke(g, ln.color, Math.max(3, DATA.cellW * 0.05));
       var core = group(S);
       path(core, ln.pts, false);
-      var tp2 = core.addProperty("ADBE Vector Filter - Trim");
+      ease1(core.addProperty("ADBE Vector Filter - Trim").property("ADBE Vector Trim End"), [[0, 0], [0.45, 100]]);
       stroke(core, [1, 1, 1], Math.max(1, DATA.cellW * 0.016));
-      ease1(tp.property("ADBE Vector Trim End"), [[0, 0], [0.45, 100]]);
-      ease1(tp2.property("ADBE Vector Trim End"), [[0, 0], [0.45, 100]]);
       glow(S, DATA.cellW * 0.22, 1.5);
     });
   }

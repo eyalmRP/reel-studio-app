@@ -547,6 +547,12 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
   }
   // track: letter spacing, a share of the size (a box look's).
   // box: a text box's look (aeBox), for its words' outline and glow.
+  // A text's outline with round corners, as the preview's canvas draws it
+  // (After Effects' own default is Miter: square corners). Set where After
+  // Effects lets a script set it (Line Join, newer versions).
+  function roundJoin(td) {
+    try { td.lineJoinType = LineJoinType.LINE_JOIN_ROUND; } catch (e) {}
+  }
   function text(comp, name, str, size, xy, rgbv, shadow, role, track, edgeRgb, slant, box) {
     var L = comp.layers.addText(str);
     L.name = name;
@@ -564,6 +570,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
     td.strokeWidth = Math.max(1, Math.round(size * 0.1 * olk));
     if (slant) try { td.fauxItalic = true; } catch (ei) {}
     td.strokeOverFill = false;
+    roundJoin(td);
     td.justification = ParagraphJustification.CENTER_JUSTIFY;
     try { td.font = DATA.font; } catch (e) { try { td.font = "Arial-BoldMT"; } catch (e2) {} }
     prop.setValue(td);
@@ -613,6 +620,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
     if (stroke) {
       sd.strokeWidth = stroke[0];
       sd.strokeColor = stroke[1];
+      roundJoin(sd);
     }
     sd.justification = td.justification;
     try { sd.tracking = td.tracking; } catch (e1) {}
@@ -647,6 +655,8 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       var lo = shineCopy(L, " Shine", r);
       SHINES.push([lo, [0, mid + 0.01 * size], G[2], [0, mid + 0.3 * size], G[3], ex ? ex[2] : null, ex ? ex[3] : null]);
       var hi = shineCopy(L, " Shine Top", r);
+      // Over the bottom half's copy, which covers all the letters.
+      hi.moveBefore(lo);
       // Above the middle only; wide enough for any line.
       var sh = new Shape(), X = 4 * W;
       sh.vertices = [[-X, mid - 4 * size], [X, mid - 4 * size], [X, mid], [-X, mid]];
@@ -684,6 +694,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       var lo = shineCopy(L, " Edge", role, null, [Math.max(1, r4(w * 0.6)), rg[5]]);
       SHINES.push([lo, [0, mid + rg[4] * size], rg[5], [0, mid + rg[6] * size], rg[7]]);
       var hi = shineCopy(L, " Edge Top", role, null, [Math.max(1, r4(w * 0.6)), rg[1]]);
+      hi.moveBefore(lo);
       var sh = new Shape(), X = 4 * W;
       sh.vertices = [[-X, mid - 4 * size], [X, mid - 4 * size], [X, cut], [-X, cut]];
       sh.closed = true;
@@ -4723,6 +4734,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
           td.strokeColor = lb.stroke;
           td.strokeWidth = Math.max(1, Math.round(bl.px * 0.22 * DATA.outline));
           td.strokeOverFill = false;
+          roundJoin(td);
           td.justification = ParagraphJustification.CENTER_JUSTIFY;
           try { td.autoLeading = false; td.leading = bl.lead; } catch (eL) {}
           if (WH.spacing) try { td.tracking = Math.round(WH.spacing * 1000); } catch (eT) {}

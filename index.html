@@ -71,7 +71,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
     var st = s === undefined || s === null ? L.startTime : s;
     var hasA = a !== undefined && a !== null, hasB = b !== undefined && b !== null;
     if (L.startTime !== 0) L.startTime = 0;
-    var o = hasB ? b - st : hasA ? L.outPoint : null;
+    var o = hasB ? b - st : (hasA ? L.outPoint : null);
     if (hasA && a - st < L.inPoint) L.inPoint = a - st;
     if (o !== null) L.outPoint = o;
     if (hasA) L.inPoint = a - st;
@@ -689,10 +689,10 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
   // layer by its place in the comp.
   function shineText(L, way, size, role, ex, ring, line, form) {
     var named = !(way instanceof Array) && way && DATA.ways && DATA.ways[way] ? way : "";
-    var G = way instanceof Array ? way : named ? DATA.ways[named] : null;
+    var G = way instanceof Array ? way : (named ? DATA.ways[named] : null);
     if (!L || !G) return;
     var r = role || roleOf(L.name), mid = -0.36 * size, X = 4 * W;
-    var rg = ring !== undefined ? ring : named && DATA.wayRing ? DATA.wayRing[named] : null;
+    var rg = ring !== undefined ? ring : (named && DATA.wayRing ? DATA.wayRing[named] : null);
     var ln = line || (named && DATA.wayLine ? DATA.wayLine[named] : null);
     // Above a line only (the top half), wide enough for any line of words.
     var above = function (Ly, cut) {
@@ -1929,11 +1929,14 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
         "var sl = 0; for (var q2 = K + 1; q2 <= n - 1; q2++) if (isSep(q2)) sl++;\n" +
         "var x = x0 + CURW + (n - 1 - K) * DW + sl * SW + DW / 2;\n" +
         "var p = Math.pow(10, K), VC = thisComp.layer(\"COUNTER CTRL\").effect(\"Value\")(1);\n" +
-        "var spd = Math.abs(VC.velocity) * SC / p, step = " + (noRoll ? "true" : "false") + " || spd > 18;\n" +
-        // Too fast to read, a digit steps once a frame, still all through
-        // it: motion blur has nothing to smear (in After Effects the digits
-        // blurred into each other), as the preview counts.
-        "if (step) vv = Math.max(0, VC.valueAtTime(Math.floor(time / thisComp.frameDuration + 1e-4) * thisComp.frameDuration)) * SC;\n" +
+        // How fast the last digit turns: a carry rolls over in the time the
+        // last digit takes to turn once, so every digit rolls that fast.
+        "var spd = Math.abs(VC.velocity) * SC, step = " + (noRoll ? "true" : "false") + " || spd > 18;\n" +
+        // Too fast to read, the digits step once a frame, still all through
+        // it, the frame its nearest (motion blur looks a little either side
+        // of it): there is nothing to smear (in After Effects the digits and
+        // a carry blurred into each other), as the preview counts.
+        "if (step) vv = Math.max(0, VC.valueAtTime(Math.round(time / thisComp.frameDuration) * thisComp.frameDuration)) * SC;\n" +
         "var base = Math.floor(vv / p + 1e-9); var lower = vv - base * p;\n" +
         "var prog = K == 0 ? lower : Math.max(0, lower - (p - 1));\n" +
         "var d = (base % 10) + (step ? 0 : Math.min(1, prog));\n" +
@@ -4802,10 +4805,10 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       var hs = bn.kind === "holdspin", fl = winMo(bn.kind).cl, nS = bn.freeSpins | 0;
       var pre = bn.kind === "retrigger" ? "+" : "", suf = hs ? " RESPINS" : "";
       var npx = countPx(bn.kind, hs ? 0.86 : 2.08), nr = fl && fl[3] ? fl[3] : "Number Font";
-      var num = text(comp, hs ? "Respins" : bn.kind === "retrigger" ? "Extra Spins" : "Free Spins Count", pre + nS + suf, npx, [cx, cy + H * (hs ? 0.1 : 0.12)], fl ? fl[4] : [1, 0.55, 0.15], fl ? false : undefined, nr, undefined, fl ? fl[5] : undefined, false, fl ? { tol: fl[7] } : undefined);
+      var num = text(comp, hs ? "Respins" : (bn.kind === "retrigger" ? "Extra Spins" : "Free Spins Count"), pre + nS + suf, npx, [cx, cy + H * (hs ? 0.1 : 0.12)], fl ? fl[4] : [1, 0.55, 0.15], fl ? false : undefined, nr, undefined, fl ? fl[5] : undefined, false, fl ? { tol: fl[7] } : undefined);
       digitInk(num, fl, null, npx, nr);
       counterFx(num, fl, [0, -npx * 0.36], npx);
-      if (!still) textExpr(num, "var cs = " + ca + ", ce = " + cz + ", n = " + nS + ";\nvar v = time <= cs ? 0 : time >= ce ? n : n * (1 - Math.pow(1 - (time - cs) / (ce - cs), 2.2));\n", "'" + pre + "' + Math.round(v) + '" + suf + "'", fl && fl[3] ? fl[3] : "Number Font");
+      if (!still) textExpr(num, "var cs = " + ca + ", ce = " + cz + ", n = " + nS + ";\nvar v = time <= cs ? 0 : (time >= ce ? n : n * (1 - Math.pow(1 - (time - cs) / (ce - cs), 2.2)));\n", "'" + pre + "' + Math.round(v) + '" + suf + "'", fl && fl[3] ? fl[3] : "Number Font");
       anim(num, "ADBE Scale", EASE_LIB + "var PU = [" + cm.pulses.join(", ") + "]; var GR = " + (cm.grow ? 1 : 0) + ";\n" +
         "var s = 100 * outBack(c01((time - " + ca + ") / 0.5));\n" +
         "for (var i = 0; i < PU.length; i++) { if (time < PU[i]) continue; if (GR) s *= Math.pow(1.35, 1 / PU.length); var u = (time - PU[i]) / 0.3; if (u < 1) s *= 1 + 0.12 * (1 - u) * (1 - u); }\n" +

@@ -10,3 +10,6 @@ work is saved in your own browser (Project › Save project to share it).
 
 This repository holds only the published page, built from a private
 source repository. Changes made here are overwritten by the next publish.
+
+**Quick Win**, its small sibling for quick wins finished in After Effects:
+https://eyalmrp.github.io/reel-studio-app/quickwin/

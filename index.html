@@ -1813,13 +1813,26 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       }
     } catch (e) {}
   }
+  // An effect's point at p in the layer's own pixels. Text and shape layers
+  // are drawn where they stand before their effects, so After Effects
+  // reads their effects' points in the comp (from its top left corner; the
+  // test in After Effects 26.5: every gradient written in the layer's own
+  // pixels came out its end colour): there toComp keeps the point on the
+  // layer as it moves, turns and grows. A picture's or a comp's points are
+  // its own pixels.
+  function atPoint(prop, L, p) {
+    prop.setValue(p);
+    var m = "";
+    try { m = L.matchName; } catch (e) {}
+    if (m === "ADBE Text Layer" || m === "ADBE Vector Layer") prop.expression = "toComp([" + r4(p[0]) + ", " + r4(p[1]) + "]);";
+  }
   // A layer leaning by deg about mid (its own pixels), as a canvas skews:
   // the top to the right for more than 0.
   function skewFx(L, mid, deg) {
     try {
       var t = fx(L, "ADBE Geometry2", "Slant");
-      t.property("ADBE Geometry2-0001").setValue(mid);
-      t.property("ADBE Geometry2-0002").setValue(mid);
+      atPoint(t.property("ADBE Geometry2-0001"), L, mid);
+      atPoint(t.property("ADBE Geometry2-0002"), L, mid);
       (t.property("ADBE Geometry2-0005") || t.property("Skew")).setValue(deg);
     } catch (e) {}
   }
@@ -3043,13 +3056,14 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
   // Matte taking the layer itself (its shape before the ramp) as the matte.
   // Scripts cannot set a shape's gradient colours, so this is how.
   // e0, e1: expressions for its colours (set before the Set Matte: adding
-  // an effect makes the handles to the ones before it invalid).
+  // an effect makes the handles to the ones before it invalid). p0, p1:
+  // its start and end in the layer's own pixels (atPoint).
   function boxRamp(L, p0, c0, p1, c1, radial, e0, e1) {
     try {
       var rp = fx(L, "ADBE Ramp", "Gradient");
-      rp.property("ADBE Ramp-0001").setValue(p0);
+      atPoint(rp.property("ADBE Ramp-0001"), L, p0);
       rp.property("ADBE Ramp-0002").setValue(c0);
-      rp.property("ADBE Ramp-0003").setValue(p1);
+      atPoint(rp.property("ADBE Ramp-0003"), L, p1);
       rp.property("ADBE Ramp-0004").setValue(c1);
       rp.property("ADBE Ramp-0005").setValue(radial ? 2 : 1);
       if (e0) rp.property("ADBE Ramp-0002").expression = e0;
@@ -3477,7 +3491,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       var RL = text(RC.comp, "Respins Label", hb.words.left, rlPx, [cx0 + bar.labelX, cy0], RB.label, false, RB.lf || undefined, RB.ls, undefined, undefined, RB);
       // Its metal; the last respin's in fire.
       var RG = DATA.ways[RB.lw], RF = DATA.ways.fire, rex = [];
-      for (var rk = 0; RG && RF && rk < 4; rk++) rex.push(holdCounterExpr() + "n == 1 ? [" + RF[rk] + ", 1] : [" + RG[rk] + ", 1];");
+      for (var rk = 0; RG && RF && rk < 4; rk++) rex.push(holdCounterExpr() + "n == 1 ? [" + RF[rk].join(",") + ", 1] : [" + RG[rk].join(",") + ", 1];");
       shineText(RL, RB.lw, rlPx, RB.lf || "Label Font", rex.length ? rex : null, RB.er || undefined);
       var fnt = "comp(\"" + FONTS.name + "\").layer(\"" + (RB.lf || "Label Font") + "\").text.sourceText.style.font";
       RL.property("ADBE Text Properties").property("ADBE Text Document").expression = holdCounterExpr() +

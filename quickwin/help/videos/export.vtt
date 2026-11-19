@@ -1,46 +1,52 @@
 WEBVTT
 
-00:00:00.401 --> 00:00:02.134
+00:00:00.402 --> 00:00:02.134
 The formats are where it ends.
 
-00:00:02.134 --> 00:00:04.732
+00:00:02.134 --> 00:00:04.733
 Each one gets its own comps in After Effects.
 
-00:00:05.086 --> 00:00:08.819
+00:00:05.087 --> 00:00:08.820
 The check on a tile puts that format in the package, or takes it out.
 
-00:00:09.175 --> 00:00:11.714
+00:00:09.183 --> 00:00:11.722
 Click a tile to see that format in the picture.
 
-00:00:12.066 --> 00:00:15.906
+00:00:12.078 --> 00:00:15.918
 A tall format can add extra rows under the reels, to fill its height.
 
-00:00:16.261 --> 00:00:20.805
+00:00:16.272 --> 00:00:20.816
 Formats with the same rows share their boards, so each board is animated once.
 
-00:00:21.158 --> 00:00:26.684
+00:00:21.169 --> 00:00:26.695
 Pick how a board's layers stack: by type, or by symbol, with each winning cell's layers together.
 
-00:00:27.037 --> 00:00:32.008
+00:00:27.048 --> 00:00:32.018
 After Effects downloads the package: the script, every symbol's art, and a readme.
 
-00:00:32.359 --> 00:00:35.431
+00:00:32.371 --> 00:00:35.443
 Unzip it, and keep the script next to its assets folder.
 
-00:00:35.782 --> 00:00:39.089
+00:00:35.797 --> 00:00:39.103
 In After Effects, choose File, Scripts, Run Script File.
 
-00:00:39.441 --> 00:00:41.553
+00:00:39.459 --> 00:00:41.571
 Pick the Quick Win script, and open it.
 
-00:00:43.662 --> 00:00:48.995
+00:00:43.789 --> 00:00:49.122
 It builds everything in one folder, with a Main comp for each format that plays the whole run.
 
-00:00:49.350 --> 00:00:54.300
+00:00:49.478 --> 00:00:54.427
 Each board holds a round's reels, frames, points and effects, all on keyframes.
 
-00:00:54.653 --> 00:00:57.063
+00:00:54.779 --> 00:01:01.072
+Built by type, each kind sits together: every point, every frame, every Win comp, every effect.
+
+00:01:02.026 --> 00:01:08.767
+Built by symbol, each winning cell's point, frame, Win comp and effect sit together, one cell after another.
+
+00:01:10.121 --> 00:01:12.532
 Every symbol has an Idle and a Win comp.
 
-00:00:57.901 --> 00:01:01.677
+00:01:13.390 --> 00:01:17.166
 Animate it there once, and every cell, round and format plays it.

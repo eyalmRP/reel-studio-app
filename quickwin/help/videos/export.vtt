@@ -1,46 +1,46 @@
 WEBVTT
 
-00:00:00.402 --> 00:00:02.135
+00:00:00.401 --> 00:00:02.134
 The formats are where it ends.
 
-00:00:02.135 --> 00:00:04.733
+00:00:02.134 --> 00:00:04.732
 Each one gets its own comps in After Effects.
 
-00:00:05.090 --> 00:00:08.823
+00:00:05.086 --> 00:00:08.819
 The check on a tile puts that format in the package, or takes it out.
 
-00:00:09.192 --> 00:00:11.731
+00:00:09.175 --> 00:00:11.714
 Click a tile to see that format in the picture.
 
-00:00:12.083 --> 00:00:15.923
+00:00:12.066 --> 00:00:15.906
 A tall format can add extra rows under the reels, to fill its height.
 
-00:00:16.279 --> 00:00:20.823
+00:00:16.261 --> 00:00:20.805
 Formats with the same rows share their boards, so each board is animated once.
 
-00:00:21.178 --> 00:00:26.703
+00:00:21.158 --> 00:00:26.684
 Pick how a board's layers stack: by type, or by symbol, with each winning cell's layers together.
 
-00:00:27.057 --> 00:00:32.028
+00:00:27.037 --> 00:00:32.008
 After Effects downloads the package: the script, every symbol's art, and a readme.
 
-00:00:32.380 --> 00:00:35.452
+00:00:32.359 --> 00:00:35.431
 Unzip it, and keep the script next to its assets folder.
 
-00:00:35.804 --> 00:00:39.111
+00:00:35.782 --> 00:00:39.089
 In After Effects, choose File, Scripts, Run Script File.
 
-00:00:39.466 --> 00:00:41.578
+00:00:39.441 --> 00:00:41.553
 Pick the Quick Win script, and open it.
 
-00:00:43.701 --> 00:00:49.034
+00:00:43.662 --> 00:00:48.995
 It builds everything in one folder, with a Main comp for each format that plays the whole run.
 
-00:00:49.392 --> 00:00:54.342
+00:00:49.350 --> 00:00:54.300
 Each board holds a round's reels, frames, points and effects, all on keyframes.
 
-00:00:54.695 --> 00:00:57.105
+00:00:54.653 --> 00:00:57.063
 Every symbol has an Idle and a Win comp.
 
-00:00:57.859 --> 00:01:01.635
+00:00:57.901 --> 00:01:01.677
 Animate it there once, and every cell, round and format plays it.

@@ -5306,7 +5306,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       // value on it, shrinking into the collector.
       var from = C.dim > 0 ? a : t0;
       var p0 = [it.x, it.y], mid = [(it.x + tg[0]) / 2, Math.min(it.y, tg[1]) - DATA.cellH * 0.6];
-      var SX = EASE_LIB + "function sm(x){return x*x*(3-2*x);}\nvar s = time < " + t0 + " ? 1 : time < " + l + " ? 1 + 0.18 * c01((time - " + t0 + ") / " + r4(l - t0) + ") : 1.18 - 0.62 * sm(c01((time - " + l + ") / " + r4(t1 - l) + ")); s = 100 * s; [s, s];";
+      var SX = EASE_LIB + "function sm(x){return x*x*(3-2*x);}\nvar s = time < " + t0 + " ? 1 : (time < " + l + " ? 1 + 0.18 * c01((time - " + t0 + ") / " + r4(l - t0) + ") : 1.18 - 0.62 * sm(c01((time - " + l + ") / " + r4(t1 - l) + "))); s = 100 * s; [s, s];";
       var CF = inst(comp, symComps[it.s] || symComps[0], "Cash " + it.text, p0, from, t1 + 0.02);
       ease1(P(CF, "ADBE Position"), [[l, p0], [(l + t1) / 2, mid], [t1, tg]]);
       P(CF, "ADBE Scale").expression = SX;

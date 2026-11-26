@@ -49,12 +49,37 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       PROG = null;
     }
   }
+  function progWrite(done) {
+    var sec = Math.round(((new Date()).getTime() - PROG_T0) / 1000);
+    try {
+      var f = new File(ROOT.fsName + "/build times.txt");
+      f.encoding = "UTF-8";
+      if (f.open("w")) {
+        f.writeln((done ? "Built in " : "Still building after ") + Math.floor(sec / 60) + " min " + (sec % 60) + " s, After Effects " + app.version + ".");
+        f.writeln("");
+        for (var i = 0; i < PROG_LOG.length; i++) f.writeln(PROG_LOG[i]);
+        if (!done && PROG_WHAT) f.writeln(PROG_WHAT + ": (still running)");
+        f.close();
+      }
+    } catch (eF) {}
+  }
+  // A step inside a long one: the window says how far, nothing logged.
+  function progSub(what) {
+    if (!PROG) return;
+    try {
+      PROG.msg.text = what;
+      var sec = Math.round(((new Date()).getTime() - PROG_T0) / 1000);
+      PROG.tim.text = Math.floor(sec / 60) + " min " + (sec % 60) + " s so far (step " + Math.min(PROG_N, PROG_OF) + " of " + PROG_OF + ")";
+      PROG.update();
+    } catch (eS) {}
+  }
   function prog(what) {
     var now = (new Date()).getTime();
     if (PROG_WHAT) PROG_LOG.push(PROG_WHAT + ": " + (Math.round((now - PROG_AT) / 100) / 10) + " s");
     PROG_WHAT = what;
     PROG_AT = now;
     PROG_N++;
+    if (what) progWrite(false);
     if (!PROG || !what) return;
     try {
       PROG.msg.text = what;
@@ -66,20 +91,10 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
   }
   function progClose() {
     prog("");
-    var sec = Math.round(((new Date()).getTime() - PROG_T0) / 1000);
     try {
       if (PROG) PROG.close();
     } catch (eC) {}
-    try {
-      var f = new File(ROOT.fsName + "/build times.txt");
-      f.encoding = "UTF-8";
-      if (f.open("w")) {
-        f.writeln("Built in " + Math.floor(sec / 60) + " min " + (sec % 60) + " s, After Effects " + app.version + ".");
-        f.writeln("");
-        for (var i = 0; i < PROG_LOG.length; i++) f.writeln(PROG_LOG[i]);
-        f.close();
-      }
-    } catch (eF) {}
+    progWrite(true);
   }
   var BEZ = KeyframeInterpolationType.BEZIER;
   var HOLD = KeyframeInterpolationType.HOLD;
@@ -824,7 +839,10 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
     return S;
   }
   function flushBevels() {
-    for (var i = 0; i < BEVELS.length; i++) try { bevelCopy(BEVELS[i][0], BEVELS[i][1]); } catch (e) {}
+    for (var i = 0; i < BEVELS.length; i++) {
+      if (i % 20 === 0) progSub("Bevels on the texts: " + i + " of " + BEVELS.length);
+      try { bevelCopy(BEVELS[i][0], BEVELS[i][1]); } catch (e) {}
+    }
     BEVELS = [];
   }
   // A text's metal and edge, as the preview paints them (render/sprites.js
@@ -985,6 +1003,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
   }
   function flushShines() {
     for (var i = 0; i < SHINES.length; i++) {
+      if (i % 20 === 0) progSub("Gradients on the texts: " + i + " of " + SHINES.length);
       var q = SHINES[i];
       boxRamp(q[0], q[1], q[2], q[3], q[4], false, q[5], q[6]);
       // The fill drawing the thin line, or the text drawing its own fill.
@@ -1189,12 +1208,26 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
     var p = winMo(id).pose;
     return "[\"" + p[0] + "\"," + p[1] + "," + p[2] + "," + p[3] + "," + p[4] + ",\"" + p[5] + "\"," + p[6] + "," + (DATA.titleLetters && DATA.titleLetters[id] ? 1 : 0) + "]";
   }
+  // A comp name no comp has yet (expressions find comps by name). The
+  // project's names are read once (reading every item for each new comp
+  // slowed big builds to a crawl), then each name given out is kept.
+  var USED_NAMES = null;
   function uniqueName(base) {
-    var names = {}, i;
-    for (i = 1; i <= proj.numItems; i++) if (proj.item(i).layers) names[proj.item(i).name] = true;
-    if (!names[base]) return base;
-    for (i = 2; i < 1000; i++) if (!names[base + " " + i]) return base + " " + i;
-    return base + " " + (new Date()).getTime();
+    var i, name = base;
+    if (!USED_NAMES) {
+      USED_NAMES = {};
+      for (i = 1; i <= proj.numItems; i++) {
+        var it = proj.item(i);
+        if (it.layers) USED_NAMES["n:" + it.name] = true;
+      }
+    }
+    if (USED_NAMES["n:" + name]) {
+      name = null;
+      for (i = 2; i < 1000 && !name; i++) if (!USED_NAMES["n:" + base + " " + i]) name = base + " " + i;
+      if (!name) name = base + " " + (new Date()).getTime();
+    }
+    USED_NAMES["n:" + name] = true;
+    return name;
   }
   function addComp(name, w, h, dur, parent) {
     var c = proj.items.addComp(uniqueName(name), Math.max(4, Math.round(w)), Math.max(4, Math.round(h)), 1, Math.max(1 / FPS, dur), FPS);
@@ -1657,7 +1690,10 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
   }
   function bakeAll() {
     var i, n = 0;
-    for (i = 0; i < BAKES.length; i++) n += bakeOne(BAKES[i]);
+    for (i = 0; i < BAKES.length; i++) {
+      if (i % 20 === 0) progSub("Keyframes: " + i + " of " + BAKES.length);
+      n += bakeOne(BAKES[i]);
+    }
     BAKES = [];
     return n;
   }
@@ -4136,7 +4172,9 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
         kids.push(msh);
       }
     }
+    prog(W + "x" + H + ": pots");
     buildPots(kids);
+    prog(W + "x" + H + ": the machine and reels");
     var back = machineArt("Machine Back", DATA.assets.back);
     if (back) kids.push(back);
     var rwin = buildReelWindow();
@@ -4402,6 +4440,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       var mo = rollCounter(hb.comp, "Win Meter", ctrl("Meter") + ".valueAtTime(time)", maxMeter, DATA.hud.size, hb.at([DATA.hud.x, DATA.hud.y]), DATA.hud.fit, undefined, MB.ns, null, MB);
       P(mo, "ADBE Opacity").expression = ctrl("Meter") + ".value > 0.0001 ? 100 : 0;";
     }
+    prog(W + "x" + H + ": jackpot boxes and pots");
     buildJackpots(kids);
     buildPotsOver(kids);
     }
@@ -6411,7 +6450,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
     buildMetalCheck();
     prog("Bevels on the texts");
     flushBevels();
-    prog("Light sweeps on the texts");
+    prog("Gradients on the texts");
     flushShines();
     prog("Keyframes");
     bakeAll();

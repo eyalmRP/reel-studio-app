@@ -98,6 +98,25 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
         if (p.expressionError) line += " (its expression stopped: " + p.expressionError + ")";
       }
       PROG_LOG.push(line + "; both should be " + v + "]");
+      // And while each round's amount is held, what each digit shows.
+      var n = 0, j, d, q;
+      for (i = 1; i < K.length && n < 3; i++) {
+        if (!(K[i].h && K[i].v > 0 && i + 1 < K.length && K[i + 1].v === 0)) continue;
+        n++;
+        q = K[i].t + 0.3;
+        line = "  [check at " + Math.round(q * 100) / 100 + " s: Meter " + m.valueAtTime(q, false);
+        if (c) {
+          line += ", counter " + c.layer("COUNTER CTRL").property("ADBE Effect Parade").property("Value").property(1).valueAtTime(q, false) + ", digits";
+          for (j = 3; j >= 0; j--) {
+            d = c.layer("Digit x10^" + j);
+            if (!d) continue;
+            var dp = d.property("ADBE Transform Group").property("ADBE Position"), dop = d.property("ADBE Transform Group").property("ADBE Opacity");
+            var xy = dp.valueAtTime(q, false);
+            line += " " + j + ":(" + Math.round(xy[0]) + "," + Math.round(xy[1]) + " " + Math.round(dop.valueAtTime(q, false)) + "%" + (dp.expressionError ? " stopped: " + dp.expressionError : "") + ")";
+          }
+        }
+        PROG_LOG.push(line + "; should be " + K[i].v + "]");
+      }
     } catch (e) {
       PROG_LOG.push("  [check: the win meter could not be read: " + e.toString() + "]");
     }
@@ -451,11 +470,11 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
     return null;
   }
   // Saber's Composite Settings on Transparent, so only the line and its
-  // glow show (its default, Black, covers everything under the layer).
-  // Picked by its name where After Effects lists the menu; where it lists
-  // nothing, the second entry (after Black), and the layer on Screen too,
-  // so black adds nothing whichever entry that is. What the menu listed
-  // goes in build times.txt once.
+  // glow show (its default, Black, covers everything under the layer):
+  // picked by its name where After Effects lists the menu (26.5 lists
+  // Transparent, Black, Add), else the first entry, with the layer on
+  // Screen too so black adds nothing. What the menu listed goes in build
+  // times.txt once.
   var SABER_MENU_LOGGED = false;
   function saberClear(sb, S, mn) {
     var p = null, items = null, k, pick = 0;
@@ -468,10 +487,44 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
         SABER_MENU_LOGGED = true;
         PROG_LOG.push("  [Saber's Composite Settings lists: " + (items && items.length ? items.join(" | ") : "no names") + "]");
       }
-      try { p.setValue(pick || 2); } catch (e2) {}
+      try { p.setValue(pick || 1); } catch (e2) {}
     }
     if (!pick) {
       try { sb.blendingMode = BlendingMode.SCREEN; } catch (e3) {}
+    }
+  }
+  // A light drawn on black and laid on with Add (a winner's or a landing's
+  // drawn effects, its fire) shows black wherever nothing lies under it in
+  // its round's comp. Its brightest channel becomes its transparency
+  // (Channel Combiner: Max RGB to Alpha Only) and the black is taken back
+  // out of its colors (Remove Color Matting), so only the light shows,
+  // over the machine too. The menus are picked by name; what they listed
+  // goes in build times.txt once.
+  var LIGHT_LOGGED = false;
+  function menuNamed(p, res) {
+    var items = null, i, k;
+    try { items = p.propertyParameters; } catch (e0) {}
+    if (!items || !items.length) return false;
+    for (k = 0; k < res.length; k++) for (i = 0; i < items.length; i++) if (res[k].test(items[i])) { p.setValue(i + 1); return true; }
+    return false;
+  }
+  function lightAlpha(L) {
+    var a = null, b = null, ok = "", e1;
+    try {
+      var cc = fx(L, "ADBE Channel Combiner", "Light To Alpha");
+      a = fxp(cc, "From");
+      b = fxp(cc, "To");
+      ok = (a && menuNamed(a, [/max\s*rgb/i, /lightness/i]) ? "" : " (From not set)") + (b && menuNamed(b, [/alpha only/i, /^alpha/i]) ? "" : " (To not set)");
+      fx(L, "ADBE Remove Color Matting", "Unmultiply");
+    } catch (e1) {
+      ok = " (" + e1.toString() + ")";
+    }
+    if (!LIGHT_LOGGED) {
+      LIGHT_LOGGED = true;
+      var la = "", lb = "";
+      try { la = a.propertyParameters.join(" | "); } catch (e2) {}
+      try { lb = b.propertyParameters.join(" | "); } catch (e3) {}
+      PROG_LOG.push("  [Light To Alpha: Channel Combiner From lists " + (la || "no names") + "; To lists " + (lb || "no names") + ok + "]");
     }
   }
   // A parameter of an effect by its (English) name, inside its groups too.
@@ -2348,6 +2401,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       var F = comp.layers.add(src);
       F.name = (behind ? "Win Effects Behind " : "Win Effects ") + sd.name;
       F.blendingMode = BlendingMode.ADD;
+      lightAlpha(F);
       F.startTime = Math.max(0, a);
       trim(F, a, Math.min(b, a + src.duration));
       F.parent = L;
@@ -5908,6 +5962,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       var F = comp.layers.add(src);
       F.name = (behind ? "Land Effects Behind " : "Land Effects ") + sd.name;
       F.blendingMode = BlendingMode.ADD;
+      lightAlpha(F);
       F.startTime = Math.max(0, t);
       trim(F, t, t + src.duration);
       F.parent = L;

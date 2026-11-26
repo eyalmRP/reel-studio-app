@@ -210,6 +210,30 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
   }
   function tr(L) { return L.property("ADBE Transform Group"); }
   function P(L, name) { return tr(L).property(name); }
+  // A layer laid on its parent, in the parent's own space: its anchor a at
+  // the point at there, 100% and not turned. A parent set from a script
+  // keeps a layer where it is on screen, changing its values to make up
+  // for the parent's (After Effects: the pot halos came out 166% of their
+  // pot and grew up from its base, a bevel copy turned off its wheel
+  // label); set after it, they mean what they say.
+  function sitOn(L, p, a, at) {
+    try { L.setParentWithJump(p); } catch (eJ) { L.parent = p; }
+    a = a || [0, 0];
+    keepAt(L, "ADBE Anchor Point", a);
+    keepAt(L, "ADBE Position", at || a);
+    keepAt(L, "ADBE Scale", [100, 100]);
+    keepAt(L, "ADBE Rotate Z", 0);
+  }
+  function keepAt(L, m, v) {
+    var q = P(L, m);
+    if (!q.numKeys) try { q.setValue(v); } catch (e) {}
+  }
+  // A layer riding on another, off its middle by off (as placed with the
+  // other at rest).
+  function rideOn(L, p, off) {
+    var pa = P(p, "ADBE Anchor Point").value, la = P(L, "ADBE Anchor Point").value;
+    sitOn(L, p, [la[0], la[1]], [pa[0] + off[0], pa[1] + off[1]]);
+  }
   function pos(L, xy) { P(L, "ADBE Position").setValue(xy); }
   function fx(L, match, name) { var e = L.property("ADBE Effect Parade").addProperty(match); if (name) e.name = name; return e; }
   function slider(L, name) { return fx(L, "ADBE Slider Control", name).property(1); }
@@ -851,7 +875,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
     if (line != null) src = "(" + src + ").split(/\\r|\\n/)[" + line + "] || \"\"";
     sp.expression = "var txt_ = " + src + ";\ntry { " + (stroke ? "text.sourceText.style.setFontSize(thisLayer.parent.text.sourceText.style.fontSize)" : "thisLayer.parent.text.sourceText.style.setApplyStroke(false)") + ".setFont(" + fontRef(role) + ").setText(txt_); } catch (err) { txt_; }";
     S.moveBefore(L);
-    S.parent = L;
+    sitOn(S, L);
     COPIES.push([S, L]);
     try {
       S.shy = true;
@@ -908,7 +932,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
     var top = over || L, i;
     for (i = 0; i < COPIES.length; i++) if (COPIES[i][1] === L && COPIES[i][0].index < top.index) top = COPIES[i][0];
     S.moveBefore(top);
-    S.parent = L;
+    sitOn(S, L);
     COPIES.push([S, L]);
     // A leaning counter's lean reaches it too.
     for (i = 0; i < SKEWS.length; i++) if (SKEWS[i][0].parent === L) { SKEWS.push([S, SKEWS[i][1], SKEWS[i][2]]); break; }
@@ -2244,8 +2268,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       F.blendingMode = BlendingMode.ADD;
       F.startTime = Math.max(0, a);
       trim(F, a, Math.min(b, a + src.duration));
-      F.parent = L;
-      pos(F, [L.source.width / 2, L.source.height / 2]);
+      sitOn(F, L, [src.width / 2, src.height / 2], [L.source.width / 2, L.source.height / 2]);
       if (behind) F.moveAfter(L);
       else F.moveBefore(L);
     }
@@ -2719,7 +2742,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       }
       if (a.lab) {
         var T = valueText(rc, a.lab, Math.round(DATA.cellH * 0.3), DATA.cellW / 2, y0);
-        T.parent = L;
+        rideOn(T, L, [0, a.lab[1] * DATA.cellH]);
         trim(T, a.tIn, a.tOut);
       }
       trim(L, a.tIn, a.tOut);
@@ -3653,7 +3676,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
   // A value (a multiplier wild's x) riding on a win layer.
   function valueOn(comp, parent, cl, a, b) {
     var T = valueText(comp, cl.lab, Math.round(DATA.cellH * 0.3), cl.x, cl.y);
-    T.parent = parent;
+    rideOn(T, parent, [0, cl.lab[1] * DATA.cellH]);
     trim(T, a, b);
     return T;
   }
@@ -4988,9 +5011,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
     for (k = 0; k < parts.length; k++) {
       var R = inst(pot.containingComp, src, it.name + " " + parts[k][0], [a[0], a[1]]);
       if (!R) continue;
-      R.parent = pot;
-      P(R, "ADBE Anchor Point").setValue([a[0], a[1]]);
-      pos(R, [a[0], a[1]]);
+      sitOn(R, pot, [a[0], a[1]]);
       // In the pot's own space: the same mask as the pot.
       potSink(R, src, it);
       try {
@@ -5745,7 +5766,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
           kids.push(LL);
           if (ld.lab) {
             var T2 = valueText(main, ld.lab, Math.round(DATA.cellH * 0.3), ld.x, ld.y);
-            T2.parent = LL;
+            rideOn(T2, LL, [0, ld.lab[1] * DATA.cellH]);
             trim(T2, ld.t, ld.until);
           }
           continue;
@@ -5759,7 +5780,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
         if (ld.lab) {
           var T = valueText(main, ld.lab, Math.round(DATA.cellH * 0.3), ld.x, ld.y);
           P(T, "ADBE Opacity").expression = lit;
-          T.parent = LL;
+          rideOn(T, LL, [0, ld.lab[1] * DATA.cellH]);
           trim(T, ld.t, ld.until);
         }
       }
@@ -5808,8 +5829,7 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
       F.blendingMode = BlendingMode.ADD;
       F.startTime = Math.max(0, t);
       trim(F, t, t + src.duration);
-      F.parent = L;
-      pos(F, [L.source.width / 2, L.source.height / 2]);
+      sitOn(F, L, [src.width / 2, src.height / 2], [L.source.width / 2, L.source.height / 2]);
       if (behind) F.moveAfter(L);
       else F.moveBefore(L);
       made.push(F);

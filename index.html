@@ -4717,7 +4717,12 @@ function hb(t, a, b) { if (t <= a || t >= b || b <= a) return 0; var D = b - a, 
   // One comp per round that shows something; it places the effect
   // placeholders (shockwaves, frames, rays, titles, paylines...) in time.
   function buildRound(R) {
-    var P0 = R.start, len = Math.max(0.6, (R.fxEnd !== null && R.fxEnd !== undefined ? R.fxEnd : R.next + 0.6) - P0), i, k;
+    // The round's comp starts on a whole frame of the animation: a count
+    // too fast to roll steps once a frame on its comp's frames, and off the
+    // animation's frames motion blur caught two steps at once (every digit
+    // of a big win's count doubled in After Effects). rel() keeps every
+    // moment where it was.
+    var P0 = Math.floor(R.start * FPS + 1e-6) / FPS, len = Math.max(0.6, (R.fxEnd !== null && R.fxEnd !== undefined ? R.fxEnd : R.next + 0.6) - P0), i, k;
     var hs = R.holdspin && (R.holdspin.hits.length || R.holdspin.tease.length);
     var hasFx = R.cellTease || R.steps.length || R.overlay || R.banner || R.wheel || R.celebrate || R.nearmiss || R.expand || R.mult || R.mystery || R.collector || R.pops.length || hs || R.collect || R.grand || R.particles.length || R.boost || R.beams || R.jackpot || R.jpShows;
     if (!hasFx) return null;
